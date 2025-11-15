@@ -1,0 +1,44 @@
+:root{
+  --accent:#0ea5a4;
+  --bg:#f7f7f8;
+  --card:#ffffff;
+  --muted:#6b7280;
+  --accent-2:#0369a1;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter, Roboto, Arial, sans-serif;background:var(--bg);color:#111}
+.container{max-width:1100px;margin:32px auto;padding:16px}
+.header{display:flex;justify-content:space-between;align-items:center;padding:12px 0}
+.header h2{margin:0;font-size:20px;color:var(--accent-2)}
+.header nav a{color:rgba(0,0,0,0.75);text-decoration:none;padding:8px 10px;border-radius:8px}
+.header nav a:hover{background:#eef4f6}
+.card{background:var(--card);padding:18px;border-radius:12px;box-shadow:0 8px 24px rgba(15,23,42,0.06)}
+.button{background:var(--accent);color:#fff;padding:10px 14px;border:none;border-radius:10px;cursor:pointer;font-weight:600}
+.button.secondary{background:transparent;color:var(--accent-2);border:1px solid #e6f2f4}
+.form-row{display:flex;gap:12px;flex-wrap:wrap}
+.input, .select, .textarea{padding:10px;border:1px solid #e6e6e9;border-radius:10px;min-width:200px}
+.input:focus, .select:focus, .textarea:focus{outline:none;box-shadow:0 0 0 3px rgba(14,165,164,0.12)}
+.textarea{min-height:100px}
+.list{margin-top:12px}
+.item{padding:14px;border-bottom:1px solid #f0f2f4;display:flex;justify-content:space-between;align-items:center}
+.muted{color:var(--muted);font-size:13px}
+.inline{display:inline-flex;gap:8px;align-items:center}
+
+/* Doctor list grid */
+.doctors-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:12px}
+.doctor-card{background:linear-gradient(180deg,#fff,#fbffff);padding:14px;border-radius:12px;border:1px solid #f1f7f8}
+.doctor-card h4{margin:0 0 6px 0}
+.badge{background:#effcf8;color:var(--accent-2);padding:6px 8px;border-radius:999px;font-weight:600;font-size:13px}
+
+/* Appointment list */
+.appointment{display:flex;justify-content:space-between;align-items:center;padding:12px;border-radius:10px;border:1px solid #f0f2f4;margin-bottom:8px;background:#fff}
+.status-pill{padding:6px 10px;border-radius:999px;font-weight:600;font-size:13px}
+.status-pending{background:#fff7ed;color:#b45309}
+.status-confirmed{background:#ecfdf5;color:#065f46}
+.status-cancelled{background:#fff1f2;color:#991b1b}
+
+/* Responsive tweaks */
+@media (max-width:600px){
+  .header{flex-direction:column;align-items:flex-start;gap:8px}
+  .form-row{flex-direction:column}
+}
