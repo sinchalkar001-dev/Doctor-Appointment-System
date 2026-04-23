@@ -16,5 +16,3 @@ To use:
 Or start backend and client separately:
    npm run server
    npm run client
-
-Note: update API URLs or env vars if your backend runs on another port.
