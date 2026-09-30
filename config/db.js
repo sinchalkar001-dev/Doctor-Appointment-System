@@ -1,22 +1,23 @@
 const mongoose = require('mongoose');
 
-module.exports = async function connectDB(){
+const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URL, {
+    const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/doctor-appointment-system';
+
+    await mongoose.connect(uri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
 
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-    return conn;
+    console.log(`✅ MongoDB Connected: ${mongoose.connection.host}`);
   } catch (error) {
-    console.error(`Error connecting to MongoDB: ${error.message}`);
-    console.log('\n⚠️  MongoDB not available. To use MongoDB:');
-    console.log('   1. Start MongoDB: mongod');
-    console.log('   2. Or use MongoDB Atlas: Update MONGO_URL in .env');
-    console.log('\n   For now, app will run in DEMO MODE with in-memory storage.\n');
-    
-    // Don't exit - allow app to run in demo mode
-    return Promise.resolve();
+    console.error(`❌ MongoDB Connection Error: ${error.message}`);
+    console.log('\n⚠️  To use MongoDB:');
+    console.log('   1. Start MongoDB locally: mongod');
+    console.log('   2. Or use MongoDB Atlas: Update MONGODB_URI in .env');
+    console.log('   3. Default: mongodb://localhost:27017/doctor-appointment-system\n');
+    process.exit(1);
   }
 };
+
+module.exports = connectDB;

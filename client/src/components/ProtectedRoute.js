@@ -1,8 +1,27 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 
-export default function ProtectedRoute({children}){
+/**
+ * Sends signed-out visitors to the sign-in page and remembers where they were
+ * going (including any booking state) so they land back there afterwards.
+ */
+export default function ProtectedRoute({ children, user, requireAdmin = false }) {
+  const location = useLocation();
   const token = localStorage.getItem('token');
-  if(!token) return <Navigate to="/login" replace />;
+
+  if (!token || !user) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: { pathname: location.pathname, search: location.search, state: location.state } }}
+      />
+    );
+  }
+
+  if (requireAdmin && user.role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+
   return children;
 }

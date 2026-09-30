@@ -1,52 +1,77 @@
-import React, {useState, useEffect} from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import React, { useCallback, useState } from 'react';
+import { Route, Routes, useNavigate } from 'react-router-dom';
+import ProtectedRoute from './components/ProtectedRoute';
+import ScrollToTop from './components/ScrollToTop';
+import SiteFooter from './components/SiteFooter';
+import SiteHeader from './components/SiteHeader';
+import { useToast } from './components/ui/Toast';
+import Admin from './pages/Admin';
+import Dashboard from './pages/Dashboard';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import NotFound from './pages/NotFound';
 import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import Admin from './pages/Admin';
 
-export default function App(){
-  const [user,setUser] = useState(null);
+// Read the stored user synchronously so the first render already knows who is
+// signed in. Reading it in an effect sent admins away from /admin on refresh.
+function readStoredUser() {
+  try {
+    return JSON.parse(localStorage.getItem('user') || 'null');
+  } catch {
+    return null;
+  }
+}
 
-  useEffect(()=>{
-    const u = localStorage.getItem('user');
-    if(u) setUser(JSON.parse(u));
-  },[]);
+export default function App() {
+  const [user, setUser] = useState(readStoredUser);
+  const navigate = useNavigate();
+  const { notify } = useToast();
 
-  const logout = ()=>{
+  const handleSignOut = useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.href = '/';
-  }
+    setUser(null);
+    notify({ tone: 'info', title: 'You’re signed out' });
+    navigate('/');
+  }, [navigate, notify]);
 
   return (
-    <div className="container">
-      <header className="header">
-        <h2>Doctor Appointment System</h2>
-        <nav>
-          <Link to="/" style={{marginRight:12}}>Home</Link>
-          {!user && <><Link to="/login" style={{marginRight:12}}>Login</Link>
-          <Link to="/register" style={{marginRight:12}}>Register</Link></>}
-          <Link to="/dashboard" style={{marginRight:12}}>Dashboard</Link>
-          {user && <span style={{marginLeft:8}} className="muted">{user.name}</span>}
-          {user && <button onClick={logout} className="button secondary" style={{marginLeft:12}}>Logout</button>}
-        </nav>
-      </header>
+    <div className="flex min-h-screen flex-col">
+      <a
+        href="#main"
+        className="sr-only rounded-control bg-sign px-4 py-2 font-semibold text-ink-inverse focus:not-sr-only focus:fixed focus:left-4 focus:top-3 focus:z-[70]"
+      >
+        Skip to main content
+      </a>
+      <ScrollToTop />
+      <SiteHeader user={user} onSignOut={handleSignOut} />
 
-      <main>
+      <main id="main" tabIndex={-1} className="flex-1 focus:outline-none">
         <Routes>
-          <Route path="/" element={<Home/>} />
-          <Route path="/login" element={<Login/>} />
-          <Route path="/register" element={<Register/>} />
-          <Route path="/dashboard" element={<Dashboard/>} />
-          <Route path="/admin" element={<Admin/>} />
+          <Route path="/" element={<Home user={user} />} />
+          <Route path="/login" element={<Login setUser={setUser} />} />
+          <Route path="/register" element={<Register setUser={setUser} />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute user={user}>
+                <Dashboard user={user} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute user={user} requireAdmin>
+                <Admin />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
 
-      <footer className="muted" style={{marginTop:24,textAlign:'center'}}>
-        Built for Doctor Appointment project.
-      </footer>
+      <SiteFooter user={user} />
     </div>
   );
 }

@@ -1,45 +1,53 @@
-const express=require('express')
-const colors=require('colors')
-const morgan=require('morgan')
-const dotenv=require('dotenv');
-const connectDB = require('./config/db');
-const path=require('path')
-dotenv.config();
-connectDB();
-const app=express()
+const express = require('express');
+const cors = require('cors');
+const morgan = require('morgan');
+const path = require('path');
+require('dotenv').config();
 
-// CORS middleware - allow requests from localhost development servers
-app.use((req, res, next) => {
-  const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001'];
-  const origin = req.header('origin');
-  
-  if (allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-  }
-  
-  res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
+// Database
+const connectDB = require('./config/db');
+
+// Routes
+const authRoutes = require('./routes/auth');
+const doctorRoutes = require('./routes/doctors');
+const appointmentRoutes = require('./routes/appointments');
+const adminRoutes = require('./routes/admin');
+
+const app = express();
+
+// Connect to MongoDB
+connectDB();
+
+// Middleware
+app.use(cors());
+app.use(morgan('dev'));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/doctors', doctorRoutes);
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/admin', adminRoutes);
+
+// Serve static files from React build
+app.use(express.static(path.join(__dirname, 'client/build')));
+
+// SPA Fallback - serve React app for all other routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'client/build/index.html'));
 });
 
-app.use(express.json())
-app.use(morgan('dev'))
-app.use("/api/v1/user",require("./routes/userRoutes"));
-app.use("/api/v1/admin", require("./routes/adminRoutes"));
-app.use("/api/v1/doctor", require("./routes/doctorRoutes"));
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Internal Server Error'
+  });
+});
 
-app.use(express.static(path.join(__dirname,"./client/build")))
-app.get('*',function(req,res){
-    res.sendFile(path.join(__dirname,"./client/build/index.html"))
-})
-const port=process.env.PORT ||8080
-
-app.listen(port,()=>{
-    console.log(`server running in ${process.env.NODE_MODE} Mode on port ${process.env.PORT}`)
-})
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`🏥 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
+});

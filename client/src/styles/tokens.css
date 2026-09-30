@@ -1,0 +1,138 @@
+/*
+ * E-Medico design tokens
+ *
+ * Visual idea: hospital wayfinding. Navy sign panels, a quiet gray corridor,
+ * white plates, and one colour plus pictogram for every department.
+ *
+ * Layer 1  Primitives  raw values. Components never reference these directly.
+ * Layer 2  Semantic    what a value is for: canvas, ink, action, status.
+ * Layer 3  Component   radius, shadow and sizing built on the semantic layer.
+ *
+ * Colours are stored as space-separated RGB channels so Tailwind can apply
+ * opacity: `bg-action/10` compiles to rgb(var(--color-action) / 0.1).
+ * Contrast ratios noted below were measured against the surface they sit on.
+ */
+
+:root {
+  /* Layer 1: primitives ------------------------------------------------ */
+
+  /* Sign navy: sign panels, primary actions, headings */
+  --navy-50: 238 242 248; /* #EEF2F8 */
+  --navy-100: 219 227 239; /* #DBE3EF */
+  --navy-200: 184 199 222; /* #B8C7DE  8.4:1 on navy-800 */
+  --navy-300: 139 161 194; /* #8BA1C2 */
+  --navy-400: 94 121 163; /* #5E79A3 */
+  --navy-500: 60 87 131; /* #3C5783 */
+  --navy-600: 40 66 107; /* #28426B */
+  --navy-700: 30 54 92; /* #1E365C */
+  --navy-800: 21 42 74; /* #152A4A  brand, 14.4:1 with white */
+  --navy-900: 14 30 55; /* #0E1E37 */
+
+  /* Corridor grays: page background, rules, secondary text */
+  --gray-0: 255 255 255; /* #FFFFFF */
+  --gray-25: 248 250 251; /* #F8FAFB */
+  --gray-50: 242 244 245; /* #F2F4F5  corridor */
+  --gray-100: 232 236 239; /* #E8ECEF */
+  --gray-200: 217 223 227; /* #D9DFE3  rule */
+  --gray-300: 192 201 208; /* #C0C9D0 */
+  --gray-600: 92 104 115; /* #5C6873  5.2:1 on corridor */
+  --gray-700: 74 87 97; /* #4A5761 */
+  --gray-800: 45 56 66; /* #2D3842  12:1 on white */
+
+  /* Signal yellow: highlights on navy only. It fails contrast on white. */
+  --yellow-300: 255 218 117; /* #FFDA75 */
+  --yellow-400: 255 198 41; /* #FFC629 */
+
+  /* Department hues in fixed order. White pictograms on each reach 3:1 or more. */
+  --dept-red: 214 69 69; /* #D64545 */
+  --dept-orange: 200 100 26; /* #C8641A */
+  --dept-gold: 183 121 31; /* #B7791F */
+  --dept-green: 46 139 87; /* #2E8B57 */
+  --dept-teal: 15 138 157; /* #0F8A9D */
+  --dept-blue: 47 111 219; /* #2F6FDB */
+  --dept-violet: 122 90 248; /* #7A5AF8 */
+  --dept-magenta: 194 65 138; /* #C2418A */
+
+  /* Status ramps */
+  --amber-50: 255 244 214; /* #FFF4D6 */
+  --amber-200: 240 208 128; /* #F0D080 */
+  --amber-600: 185 125 10; /* #B97D0A  fill, 3.5:1 on white */
+  --amber-800: 122 75 0; /* #7A4B00  text, 6.8:1 on amber-50 */
+  --green-50: 227 244 234; /* #E3F4EA */
+  --green-200: 169 221 191; /* #A9DDBF */
+  --green-600: 46 155 99; /* #2E9B63  fill, 3.5:1 on white */
+  --green-800: 23 97 58; /* #17613A  text, 6.5:1 on green-50 */
+  --slate-600: 123 135 145; /* #7B8791  fill, 3.7:1 on white */
+  --red-50: 254 240 238; /* #FEF0EE */
+  --red-200: 250 199 193; /* #FAC7C1 */
+  --red-300: 255 150 138; /* #FF968A  icons on navy */
+  --red-600: 180 35 24; /* #B42318  6.6:1 with white */
+  --red-700: 150 28 19; /* #961C13  7.6:1 on red-50 */
+
+  /* Layer 2: semantic -------------------------------------------------- */
+
+  --color-canvas: var(--gray-50);
+  --color-surface: var(--gray-0);
+  --color-surface-muted: var(--gray-25);
+  --color-surface-sunken: var(--gray-100);
+
+  --color-ink: var(--navy-800); /* headings and key values */
+  --color-ink-soft: var(--gray-800); /* body copy */
+  --color-ink-muted: var(--gray-600); /* secondary copy */
+  --color-ink-inverse: var(--gray-0);
+
+  --color-line: var(--gray-200);
+  --color-line-strong: var(--gray-300);
+
+  --color-action: var(--navy-800);
+  --color-action-hover: var(--navy-700);
+  --color-action-active: var(--navy-900);
+  --color-action-soft: var(--navy-50);
+
+  --color-sign: var(--navy-800);
+  --color-sign-raised: var(--navy-700);
+  --color-sign-line: var(--navy-600);
+  --color-sign-muted: var(--navy-200); /* secondary text on sign panels */
+  --color-signal: var(--yellow-400);
+
+  --color-focus: var(--navy-800);
+
+  --color-pending: var(--amber-600);
+  --color-pending-soft: var(--amber-50);
+  --color-pending-line: var(--amber-200);
+  --color-pending-ink: var(--amber-800);
+
+  --color-confirmed: var(--green-600);
+  --color-confirmed-soft: var(--green-50);
+  --color-confirmed-line: var(--green-200);
+  --color-confirmed-ink: var(--green-800);
+
+  --color-cancelled: var(--slate-600);
+  --color-cancelled-soft: var(--gray-100);
+  --color-cancelled-line: var(--gray-200);
+  --color-cancelled-ink: var(--gray-700);
+
+  --color-danger: var(--red-600);
+  --color-danger-hover: var(--red-700);
+  --color-danger-soft: var(--red-50);
+  --color-danger-line: var(--red-200);
+  --color-danger-ink: var(--red-700);
+  --color-danger-on-sign: var(--red-300);
+
+  /* Layer 3: component ------------------------------------------------- */
+
+  --radius-chip: 6px; /* badges, small tags */
+  --radius-control: 8px; /* buttons, inputs, choice chips */
+  --radius-plate: 10px; /* plates, sign panels */
+  --radius-dialog: 14px; /* dialogs and sheets */
+
+  --shadow-raise: 0 1px 2px rgb(var(--navy-900) / 0.08), 0 1px 1px rgb(var(--navy-900) / 0.04);
+  --shadow-overlay: 0 24px 48px -12px rgb(var(--navy-900) / 0.3), 0 2px 6px rgb(var(--navy-900) / 0.08);
+
+  --header-height: 4rem;
+}
+
+/* Sign panels switch the focus colour so keyboard focus stays visible on navy. */
+.on-sign {
+  --color-focus: var(--yellow-400);
+}
