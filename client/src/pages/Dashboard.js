@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { CalendarPlus, CalendarX, History, RefreshCw, Signpost } from 'lucide-react';
+import { CalendarClock, CalendarPlus, CalendarX, History, RefreshCw, Signpost } from 'lucide-react';
 import { appointmentAPI, doctorAPI } from '../api';
 import AppointmentForm from '../components/AppointmentForm';
 import AppointmentItem from '../components/AppointmentItem';
+import { LiveStatus, useLiveEvent } from '../components/LiveProvider';
 import Alert from '../components/ui/Alert';
 import Button from '../components/ui/Button';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
@@ -43,12 +44,12 @@ const EMPTY_STATES = {
   past: {
     icon: History,
     title: 'No past visits yet',
-    description: 'Appointments move here once their date and time have passed.',
+    description: 'Visits move here once they have taken place.',
   },
   cancelled: {
     icon: CalendarX,
     title: 'Nothing cancelled',
-    description: 'Appointments you cancel stay here for your records.',
+    description: 'Cancelled appointments stay here for your records.',
   },
 };
 
@@ -56,10 +57,12 @@ const TIPS = [
   'Arrive 10 minutes early to check in.',
   'Bring earlier prescriptions and test reports.',
   'Carry a photo ID.',
-  'If your plans change, cancel here so someone else can take the slot.',
+  'If your plans change, reschedule or cancel here so someone else can take the slot.',
 ];
 
-function NextVisit({ appointment, loading, onBook, onCancel }) {
+const ACTIVE = ['pending', 'confirmed'];
+
+function NextVisit({ appointment, loading, onBook, onCancel, onReschedule }) {
   if (loading) {
     return <div aria-hidden="true" className="h-52 animate-pulse rounded-plate bg-sign/90" />;
   }
@@ -91,16 +94,20 @@ function NextVisit({ appointment, loading, onBook, onCancel }) {
               <span className="truncate">{doctor?.name || 'Doctor no longer listed'}</span>
             </p>
             <p className="mt-1 text-sign-muted">
-              {[doctor?.specialization, doctor?.fees !== undefined ? formatFee(doctor.fees) : null]
-                .filter(Boolean)
-                .join(', ')}
+              {[doctor?.specialization, doctor?.fees !== undefined ? formatFee(doctor.fees) : null].filter(Boolean).join(', ')}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3 sm:flex-col sm:items-end">
+          <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-end">
             <StatusBadge status={appointment.status} />
-            <Button variant="sign-ghost" size="sm" onClick={() => onCancel(appointment)}>
-              Cancel appointment
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="sign-ghost" size="sm" onClick={() => onReschedule(appointment)}>
+                <CalendarClock aria-hidden="true" />
+                Reschedule
+              </Button>
+              <Button variant="sign-ghost" size="sm" onClick={() => onCancel(appointment)}>
+                Cancel
+              </Button>
+            </div>
           </div>
         </div>
       ) : (
@@ -134,6 +141,7 @@ export default function Dashboard({ user }) {
   const [filter, setFilter] = useState('upcoming');
   const [bookingOpen, setBookingOpen] = useState(false);
   const [bookingDoctorId, setBookingDoctorId] = useState('');
+  const [toReschedule, setToReschedule] = useState(null);
   const [toCancel, setToCancel] = useState(null);
   const [cancelling, setCancelling] = useState(false);
 
@@ -172,6 +180,11 @@ export default function Dashboard({ user }) {
     loadDoctors();
   }, [loadAppointments, loadDoctors]);
 
+  // A doctor confirmed, cancelled or completed something: refresh quietly.
+  useLiveEvent('appointment', () => loadAppointments({ silent: true }));
+  useLiveEvent('reconnected', () => loadAppointments({ silent: true }));
+  useLiveEvent('directory', () => loadDoctors());
+
   // Open the booking drawer when arriving from a doctor card or a "Book appointment" link.
   useEffect(() => {
     const state = location.state;
@@ -188,15 +201,15 @@ export default function Dashboard({ user }) {
       at: toDateTime(appointment.date, appointment.time),
     }));
     const stamp = (entry) => (entry.at ? entry.at.getTime() : 0);
-    const active = timed.filter((entry) => entry.appointment.status !== 'cancelled');
+    const isUpcoming = (entry) => ACTIVE.includes(entry.appointment.status) && entry.at && entry.at >= now;
 
     return {
-      upcoming: active
-        .filter((entry) => entry.at && entry.at >= now)
+      upcoming: timed
+        .filter(isUpcoming)
         .sort((a, b) => stamp(a) - stamp(b))
         .map((entry) => entry.appointment),
-      past: active
-        .filter((entry) => !entry.at || entry.at < now)
+      past: timed
+        .filter((entry) => entry.appointment.status !== 'cancelled' && !isUpcoming(entry))
         .sort((a, b) => stamp(b) - stamp(a))
         .map((entry) => entry.appointment),
       cancelled: timed
@@ -214,9 +227,7 @@ export default function Dashboard({ user }) {
     setBookingOpen(true);
   };
 
-  const closeBooking = () => setBookingOpen(false);
-
-  const handleBooked = () => {
+  const handleSaved = () => {
     setFilter('upcoming');
     loadAppointments({ silent: true });
   };
@@ -228,9 +239,7 @@ export default function Dashboard({ user }) {
       const response = await appointmentAPI.cancel(toCancel._id);
       if (response.data.success) {
         setAppointments((current) =>
-          current.map((appointment) =>
-            appointment._id === toCancel._id ? { ...appointment, status: 'cancelled' } : appointment
-          )
+          current.map((appointment) => (appointment._id === toCancel._id ? { ...appointment, ...response.data.appointment } : appointment))
         );
         notify({
           title: 'Appointment cancelled',
@@ -259,7 +268,7 @@ export default function Dashboard({ user }) {
       summary = 'You have no upcoming appointments.';
     } else {
       summary = `You have ${pluralize(groups.upcoming.length, 'upcoming appointment')}.`;
-      if (awaiting > 0) summary += ` ${awaiting === 1 ? '1 is' : `${awaiting} are`} waiting for confirmation.`;
+      if (awaiting > 0) summary += ` ${awaiting === 1 ? '1 is' : `${awaiting} are`} waiting for the doctor to confirm.`;
     }
   }
 
@@ -319,6 +328,7 @@ export default function Dashboard({ user }) {
             key={appointment._id}
             appointment={appointment}
             onCancel={filter === 'upcoming' ? setToCancel : undefined}
+            onReschedule={filter === 'upcoming' ? setToReschedule : undefined}
           />
         ))}
       </ul>
@@ -329,7 +339,8 @@ export default function Dashboard({ user }) {
     <div className="container-page py-10 lg:py-14">
       <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
+          <LiveStatus />
+          <h1 className="mt-2 text-4xl font-extrabold tracking-tight sm:text-5xl">
             {greeting()}, {firstName(user?.name) || 'there'}
           </h1>
           <p className="mt-3 text-lg text-ink-soft" aria-live="polite">
@@ -349,6 +360,7 @@ export default function Dashboard({ user }) {
             loading={loading}
             onBook={() => openBooking()}
             onCancel={setToCancel}
+            onReschedule={setToReschedule}
           />
 
           <section aria-labelledby="appointments-title">
@@ -406,10 +418,10 @@ export default function Dashboard({ user }) {
 
       <Dialog
         open={bookingOpen}
-        onClose={closeBooking}
+        onClose={() => setBookingOpen(false)}
         variant="drawer"
         title="Book an appointment"
-        description="Choose a doctor, a date and a time. The clinic confirms each request."
+        description="Only open times are shown. The doctor confirms each request."
         bodyClassName="flex min-h-0 flex-1 flex-col"
       >
         <AppointmentForm
@@ -418,9 +430,22 @@ export default function Dashboard({ user }) {
           doctorsError={doctorsError}
           onRetryDoctors={loadDoctors}
           initialDoctorId={bookingDoctorId}
-          onBooked={handleBooked}
-          onClose={closeBooking}
+          onBooked={handleSaved}
+          onClose={() => setBookingOpen(false)}
         />
+      </Dialog>
+
+      <Dialog
+        open={Boolean(toReschedule)}
+        onClose={() => setToReschedule(null)}
+        variant="drawer"
+        title="Reschedule appointment"
+        description={toReschedule ? `With ${toReschedule.doctor?.name || 'your doctor'}` : undefined}
+        bodyClassName="flex min-h-0 flex-1 flex-col"
+      >
+        {toReschedule ? (
+          <AppointmentForm appointment={toReschedule} onBooked={handleSaved} onClose={() => setToReschedule(null)} />
+        ) : null}
       </Dialog>
 
       <ConfirmDialog
@@ -434,7 +459,7 @@ export default function Dashboard({ user }) {
             ? `Your ${formatTime(toCancel.time)} appointment with ${toCancel.doctor?.name || 'the doctor'} on ${formatDate(
                 toCancel.date,
                 'EEEE d MMMM'
-              )} will be cancelled. This can’t be undone.`
+              )} will be cancelled and the time freed for someone else.`
             : undefined
         }
         confirmLabel="Cancel appointment"

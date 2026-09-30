@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { CalendarDays, Check, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { CalendarDays, Check, CheckCheck, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { adminAPI } from '../../api';
+import { useLiveEvent } from '../../components/LiveProvider';
 import Alert from '../../components/ui/Alert';
 import Button from '../../components/ui/Button';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -11,23 +12,48 @@ import StatusBadge from '../../components/ui/StatusBadge';
 import { TabList } from '../../components/ui/Tabs';
 import { useToast } from '../../components/ui/Toast';
 import { cn } from '../../lib/cn';
-import { formatDate, formatTime, pluralize } from '../../lib/format';
+import { formatDate, formatTime, pluralize, toDateTime } from '../../lib/format';
 import { TABLE, TD, TH, THEAD } from './tableStyles';
 
 const FILTERS = [
   { id: '', label: 'All' },
   { id: 'pending', label: 'Pending' },
   { id: 'confirmed', label: 'Confirmed' },
+  { id: 'completed', label: 'Completed' },
   { id: 'cancelled', label: 'Cancelled' },
 ];
 
+const TOASTS = {
+  confirmed: ['Appointment confirmed', 'The appointment could not be confirmed'],
+  completed: ['Visit marked completed', 'The visit could not be marked completed'],
+  cancelled: ['Appointment cancelled', 'The appointment could not be cancelled'],
+};
+
+function hasStarted(appointment) {
+  const at = toDateTime(appointment.date, appointment.time);
+  return Boolean(at && at <= new Date());
+}
+
 const PAGE_SIZE = 20;
 
-function RowActions({ appointment, busyId, onConfirm, onCancel }) {
+function RowActions({ appointment, busyId, onConfirm, onComplete, onCancel }) {
   const patient = appointment.user?.name || 'the patient';
   const busy = busyId === appointment._id;
+  const canComplete = appointment.status === 'confirmed' && hasStarted(appointment);
   return (
     <div className="flex flex-wrap justify-end gap-2">
+      {canComplete ? (
+        <Button
+          size="sm"
+          onClick={() => onComplete(appointment)}
+          loading={busy}
+          disabled={Boolean(busyId) && !busy}
+          aria-label={`Mark the visit for ${patient} completed`}
+        >
+          <CheckCheck aria-hidden="true" />
+          Complete
+        </Button>
+      ) : null}
       {appointment.status === 'pending' ? (
         <Button
           size="sm"
@@ -40,7 +66,7 @@ function RowActions({ appointment, busyId, onConfirm, onCancel }) {
           Confirm
         </Button>
       ) : null}
-      {appointment.status !== 'cancelled' ? (
+      {['pending', 'confirmed'].includes(appointment.status) ? (
         <Button
           variant="danger-ghost"
           size="sm"
@@ -92,6 +118,9 @@ export default function AppointmentsTab({ status, onStatusChange }) {
     load();
   }, [load]);
 
+  useLiveEvent('appointment', () => load({ silent: true }));
+  useLiveEvent('reconnected', () => load({ silent: true }));
+
   const changeStatus = (nextStatus) => {
     setPage(1);
     onStatusChange(nextStatus);
@@ -103,7 +132,7 @@ export default function AppointmentsTab({ status, onStatusChange }) {
       const response = await adminAPI.updateAppointmentStatus(appointment._id, { status: nextStatus });
       if (response.data.success) {
         notify({
-          title: nextStatus === 'confirmed' ? 'Appointment confirmed' : 'Appointment cancelled',
+          title: TOASTS[nextStatus][0],
           description: `${appointment.user?.name || 'Patient'} with ${appointment.doctor?.name || 'the doctor'}`,
         });
         await load({ silent: true });
@@ -112,7 +141,7 @@ export default function AppointmentsTab({ status, onStatusChange }) {
     } catch (err) {
       notify({
         tone: 'error',
-        title: nextStatus === 'confirmed' ? 'The appointment could not be confirmed' : 'The appointment could not be cancelled',
+        title: TOASTS[nextStatus][1],
         description: err.response?.data?.message || 'Try again in a moment.',
       });
     } finally {
@@ -228,6 +257,7 @@ export default function AppointmentsTab({ status, onStatusChange }) {
                       appointment={appointment}
                       busyId={busyId}
                       onConfirm={(item) => updateStatus(item, 'confirmed')}
+                      onComplete={(item) => updateStatus(item, 'completed')}
                       onCancel={setToCancel}
                     />
                   </td>
@@ -260,6 +290,7 @@ export default function AppointmentsTab({ status, onStatusChange }) {
                 appointment={appointment}
                 busyId={busyId}
                 onConfirm={(item) => updateStatus(item, 'confirmed')}
+                onComplete={(item) => updateStatus(item, 'completed')}
                 onCancel={setToCancel}
               />
             </li>

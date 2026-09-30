@@ -15,7 +15,7 @@ const TABS = [
   { id: 'users', label: 'Users', icon: Users },
 ];
 
-const STATUSES = ['pending', 'confirmed', 'cancelled'];
+const STATUSES = ['pending', 'confirmed', 'completed', 'cancelled'];
 
 export default function Admin() {
   useDocumentTitle('Admin');

@@ -12,7 +12,7 @@ import { firstName } from '../lib/format';
 
 const MIN_PASSWORD = 6;
 
-export default function Register({ setUser }) {
+export default function Register({ onSession }) {
   useDocumentTitle('Create account');
   const location = useLocation();
   const navigate = useNavigate();
@@ -44,9 +44,7 @@ export default function Register({ setUser }) {
       const response = await authAPI.register({ name: name.trim(), email: email.trim(), password });
       if (response.data.success) {
         const { token, user } = response.data;
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
-        setUser(user);
+        onSession({ token, user });
         notify({ title: `Account created. Welcome, ${firstName(user.name) || 'there'}` });
         const destination = from?.pathname ? `${from.pathname}${from.search || ''}` : '/';
         navigate(destination, { replace: true, state: from?.state });

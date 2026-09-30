@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pencil, Plus, RefreshCw, Search, SearchX, Stethoscope, Trash2 } from 'lucide-react';
+import { KeyRound, Pencil, Plus, RefreshCw, Search, SearchX, Stethoscope, Trash2 } from 'lucide-react';
 import { adminAPI, doctorAPI } from '../../api';
+import { useLiveEvent } from '../../components/LiveProvider';
 import Alert from '../../components/ui/Alert';
 import Button from '../../components/ui/Button';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -11,6 +12,7 @@ import { Input } from '../../components/ui/Field';
 import { useToast } from '../../components/ui/Toast';
 import { cn } from '../../lib/cn';
 import { formatFee, pluralize, sortableName } from '../../lib/format';
+import { describeAvailability } from '../../lib/schedule';
 import DoctorFormDialog from './DoctorFormDialog';
 import { TABLE, TD, TH, THEAD } from './tableStyles';
 
@@ -47,6 +49,8 @@ export default function DoctorsTab() {
     load();
   }, [load]);
 
+  useLiveEvent('directory', () => load({ silent: true }));
+
   const specialties = useMemo(
     () =>
       [...new Set(doctors.map((doctor) => (doctor.specialization || '').trim()).filter(Boolean))].sort((a, b) =>
@@ -80,7 +84,8 @@ export default function DoctorsTab() {
 
   const handleSaved = (saved, mode) => {
     setFormOpen(false);
-    notify({ title: mode === 'create' ? 'Doctor added' : 'Changes saved', description: saved?.name });
+    const signIn = saved?.account?.email ? ` Signs in as ${saved.account.email}.` : '';
+    notify({ title: mode === 'create' ? 'Doctor added' : 'Changes saved', description: `${saved?.name || ''}.${signIn}` });
     load({ silent: true });
   };
 
@@ -91,7 +96,13 @@ export default function DoctorsTab() {
       const response = await doctorAPI.delete(toRemove._id);
       if (response.data.success) {
         setDoctors((current) => current.filter((doctor) => doctor._id !== toRemove._id));
-        notify({ title: 'Doctor removed', description: toRemove.name });
+        const cancelled = response.data.cancelledAppointments || 0;
+        notify({
+          title: 'Doctor removed',
+          description: cancelled
+            ? `${toRemove.name}. ${pluralize(cancelled, 'open appointment')} cancelled and the patients notified.`
+            : toRemove.name,
+        });
         setToRemove(null);
       } else {
         notify({ tone: 'error', title: 'The doctor could not be removed', description: response.data.message });
@@ -174,6 +185,9 @@ export default function DoctorsTab() {
                 <th scope="col" className={TH}>
                   Department
                 </th>
+                <th scope="col" className={TH}>
+                  Hours and sign-in
+                </th>
                 <th scope="col" className={cn(TH, 'text-right')}>
                   Experience
                 </th>
@@ -197,6 +211,13 @@ export default function DoctorsTab() {
                       <DepartmentTile department={doctor.specialization} size="sm" />
                       {doctor.specialization}
                     </span>
+                  </td>
+                  <td className={TD}>
+                    <p className="text-sm text-ink-soft">{describeAvailability(doctor.availability)}</p>
+                    <p className="mt-0.5 flex items-center gap-1.5 text-sm text-ink-muted">
+                      <KeyRound className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      {doctor.account ? doctor.account.email : 'No sign-in'}
+                    </p>
                   </td>
                   <td className={cn(TD, 'tabular text-right')}>{experienceLabel(doctor)}</td>
                   <td className={cn(TD, 'tabular text-right font-semibold text-ink')}>{formatFee(doctor.fees)}</td>
@@ -240,6 +261,8 @@ export default function DoctorsTab() {
                     {formatFee(doctor.fees)}, {experienceLabel(doctor).toLowerCase()}
                   </p>
                   {doctor.phone ? <p className="text-sm text-ink-muted">{doctor.phone}</p> : null}
+                  <p className="mt-1 text-sm text-ink-muted">{describeAvailability(doctor.availability)}</p>
+                  <p className="text-sm text-ink-muted">{doctor.account ? `Signs in as ${doctor.account.email}` : 'No sign-in'}</p>
                 </div>
               </div>
               <div className="mt-3 flex gap-2">

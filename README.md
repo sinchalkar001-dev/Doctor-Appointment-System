@@ -1,327 +1,175 @@
-# E-Medico - Modern Doctor Appointment System
+# E-Medico
 
-A production-ready, industry-level doctor appointment booking system built with modern technologies.
+An online doctor appointment system built on the MERN stack. Patients search a department directory and book open times, doctors confirm and manage their own schedule, and administrators run the clinic. Changes appear on every open screen in real time.
 
-## 🎯 Features
+The repository is split into two apps:
 
-### For Patients
-- ✅ Easy doctor discovery with search and filtering by specialization
-- ✅ One-click appointment booking with real-time availability
-- ✅ Manage all your appointments in a personal dashboard
-- ✅ Cancel or reschedule appointments anytime
-- ✅ Secure authentication with JWT tokens
-- ✅ Beautiful, responsive UI for mobile and desktop
+| Folder | What it is |
+| --- | --- |
+| [`client/`](client) | React 18 single-page app (Create React App, Tailwind CSS, React Router) |
+| [`server/`](server) | Express REST API with MongoDB (Mongoose), JWT authentication and Server-Sent Events |
 
-### For Administrators
-- ✅ Comprehensive admin dashboard with statistics
-- ✅ Manage doctors (add, edit, delete)
-- ✅ View and manage all appointments
-- ✅ User management
-- ✅ Real-time appointment status updates
+## Features
 
-## 🛠️ Tech Stack
+### Patients
 
-### Frontend
-- **React 18** - Modern UI library
-- **React Router v6** - Client-side routing
-- **Tailwind CSS** - Utility-first CSS framework
-- **Lucide React** - Beautiful icon library
-- **Axios** - HTTP client
+- Browse doctors by department, search by name or specialty, and sort by fee or experience.
+- Book from the doctor's real open times. Days off and fully booked days are disabled, and taken times are crossed out.
+- Reschedule or cancel upcoming appointments, and read the doctor's note after a visit.
+- See confirmations and cancellations the moment the doctor makes them, with no refresh.
 
-### Backend
-- **Node.js** - JavaScript runtime
-- **Express.js** - Web framework
-- **MongoDB** - NoSQL database
-- **Mongoose** - MongoDB ODM
-- **JWT** - Secure authentication
-- **bcryptjs** - Password hashing
-- **CORS** - Cross-origin requests
+### Doctors
 
-## 📋 Prerequisites
+- A personal schedule: today's appointments, requests waiting for confirmation, upcoming, past and cancelled visits.
+- Confirm or decline requests, cancel with a reason, and mark visits completed with a note for the patient.
+- Set working days, hours, a daily break and appointment length. Patients only see times inside these hours.
 
-Before you begin, ensure you have installed:
-- Node.js (v16 or higher)
-- npm or yarn
-- MongoDB (local or MongoDB Atlas)
+### Administrators
 
-## 🚀 Quick Start
+- Overview of doctors, users and appointments, with a status breakdown and a queue of requests to confirm.
+- Add, edit and remove doctors, set their working hours, and give them a sign-in for the doctor portal.
+- Review every appointment with filters and pagination, and see all registered users by role.
 
-### 1. **Clone & Setup**
+### Platform
+
+- Role-based access control on every API route (patient, doctor, admin).
+- Double booking is impossible: a unique database index allows one active booking per doctor, date and time, even under simultaneous requests.
+- Passwords hashed with bcrypt, signed JWT sessions, and password changes that sign out every other device.
+- Rate-limited sign-in and registration, input validation on every write, and protective response headers.
+- Accessible, responsive interface: keyboard navigation, focus management in dialogs, visible labels and reduced-motion support.
+
+## Getting started
+
+You need Node.js 18 or newer and MongoDB (local, or a MongoDB Atlas connection string).
 
 ```bash
-# Navigate to project root
-cd doctor-appointment-system
+# 1. Install everything (root, server and client)
+npm run install:all
 
-# Install backend dependencies
-npm install
+# 2. Configure the server
+cp server/.env.example server/.env      # then set JWT_SECRET and MONGODB_URI
 
-# Install frontend dependencies
-cd client
-npm install
-cd ..
-```
-
-### 2. **Configure Environment Variables**
-
-Create a `.env` file in the root directory:
-
-```env
-MONGODB_URI=mongodb://localhost:27017/doctor-appointment-system
-NODE_ENV=development
-PORT=5000
-JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
-JWT_EXPIRE=7d
-BCRYPT_ROUNDS=10
-```
-
-### 3. **Start MongoDB**
-
-If using local MongoDB:
-```bash
-mongod
-```
-
-Or use MongoDB Atlas and update `MONGODB_URI` with your connection string.
-
-### 4. **Seed Sample Data**
-
-```bash
+# 3. Load demo data (this resets the database named in MONGODB_URI)
 npm run seed
-```
 
-This will create:
-- 8 sample doctors with different specializations
-- 3 demo users (including admin)
-
-**Demo Credentials:**
-- Email: `john@example.com` Password: `password123` (User)
-- Email: `admin@example.com` Password: `password123` (Admin)
-
-### 5. **Start the Application**
-
-#### Option A: Run both backend and frontend concurrently
-```bash
+# 4. Run the API (port 5000) and the React app (port 3000) together
 npm run dev
 ```
 
-#### Option B: Run separately in different terminals
+Open <http://localhost:3000>.
 
-Terminal 1 (Backend on port 5000):
-```bash
-npm run server
+### Demo accounts
+
+Every seeded account uses the password `password123`.
+
+| Role | Email |
+| --- | --- |
+| Patient | `john@example.com` |
+| Patient | `jane@example.com` |
+| Doctor | `sarah.johnson@example.com` (every seeded doctor has a sign-in: `firstname.lastname@example.com`) |
+| Admin | `admin@example.com` |
+
+### Scripts
+
+Run these from the project root.
+
+| Command | What it does |
+| --- | --- |
+| `npm run install:all` | Installs root, server and client dependencies |
+| `npm run dev` | Starts the API with nodemon and the React dev server |
+| `npm run server` / `npm run client` | Starts one side only |
+| `npm run seed` | Resets the database and loads demo data |
+| `npm test` | Runs the server's scheduling tests (Node's built-in test runner) |
+| `npm run build` | Builds the React app into `client/build` |
+| `npm start` | Starts the API; it also serves `client/build` when it exists |
+
+### Environment variables
+
+`server/.env` (see [`server/.env.example`](server/.env.example)):
+
+| Variable | Purpose |
+| --- | --- |
+| `MONGODB_URI` | MongoDB connection string |
+| `JWT_SECRET` | Required. Long random string used to sign sessions (32+ characters in production) |
+| `JWT_EXPIRE` | Session length, default `7d` |
+| `PORT` | API port, default `5000` |
+| `CLIENT_ORIGIN` | Optional comma-separated list of allowed browser origins |
+| `BCRYPT_ROUNDS` | Password hashing cost, default `10` |
+
+`client/.env` is optional. By default the client calls `/api`, which the development proxy forwards to port 5000. Set `REACT_APP_API_URL` only if the API lives elsewhere.
+
+## Project structure
+
+```
+client/
+  src/
+    api.js                 API client (axios) and live-updates URL
+    components/            App shell, booking form, availability editor, live-updates provider
+    components/ui/         Design-system components: buttons, fields, dialog, toasts, tabs, badges
+    pages/                 Home, sign in, register, dashboard, doctor portal, account, admin
+    lib/                   Date, fee, department and scheduling helpers
+    styles/tokens.css      Design tokens (primitive, semantic and component layers)
+server/
+  app.js                   Express app: security headers, CORS, routes, errors, static client
+  server.js                Entry point: config check, database connection, graceful shutdown
+  config/                  Environment and MongoDB connection
+  middleware/              Authentication and roles, validation, rate limiting, errors
+  models/                  User, Doctor (with availability), Appointment
+  routes/                  auth, doctors, appointments, doctor portal, admin, events
+  services/                Scheduling rules, appointment workflow, real-time hub
+  scripts/seedData.js      Demo data
+  tests/                   Scheduling tests
 ```
 
-Terminal 2 (Frontend on port 3000):
-```bash
-npm run client
-```
+## API
 
-### 6. **Access the Application**
+All routes are under `/api`. Send `Authorization: Bearer <token>` for protected routes.
 
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:5000/api
+| Method | Route | Access | Purpose |
+| --- | --- | --- | --- |
+| POST | `/auth/register` | Public | Create a patient account |
+| POST | `/auth/login` | Public | Sign in |
+| GET / PUT | `/auth/me` | Signed in | Read or update your profile |
+| PUT | `/auth/password` | Signed in | Change password (returns a new token) |
+| GET | `/doctors` | Public | List doctors (`specialization`, `q`, `page`, `limit`) |
+| GET | `/doctors/:id/slots?date=` | Public | Every slot on a date and whether it is open |
+| GET | `/doctors/:id/calendar?from=&days=` | Public | Open-slot counts per day |
+| POST / PUT / DELETE | `/doctors/:id` | Admin | Manage doctors, working hours and portal sign-ins |
+| GET / POST | `/appointments` | Signed in | Your appointments, or book one |
+| PATCH | `/appointments/:id/reschedule` | Owner | Move to another open time |
+| PATCH | `/appointments/:id/cancel` | Owner | Cancel |
+| GET | `/doctor/appointments` | Doctor | Your schedule |
+| PATCH | `/doctor/appointments/:id` | Doctor | Confirm, cancel or complete, with a reason or note |
+| PUT | `/doctor/availability` | Doctor | Set working days, hours, break and slot length |
+| GET | `/admin/stats` | Admin | Counts by status, today's bookings, portal sign-ins |
+| GET / PATCH | `/admin/appointments` | Admin | Review and update any appointment |
+| GET | `/admin/doctors`, `/admin/users` | Admin | Directory and users |
+| GET | `/events?token=` | Signed in | Live-updates stream (Server-Sent Events) |
+| GET | `/health` | Public | Health check |
 
-## 📁 Project Structure
+Appointment statuses move from `pending` to `confirmed` to `completed`, and `pending` or `confirmed` can become `cancelled`.
 
-```
-doctor-appointment-system/
-├── config/
-│   └── db.js                 # MongoDB connection
-├── middleware/
-│   └── auth.js               # JWT authentication
-├── models/
-│   ├── User.js              # User schema
-│   ├── Doctor.js            # Doctor schema
-│   └── Appointment.js       # Appointment schema
-├── routes/
-│   ├── auth.js              # Authentication endpoints
-│   ├── doctors.js           # Doctor endpoints
-│   ├── appointments.js      # Appointment endpoints
-│   └── admin.js             # Admin endpoints
-├── scripts/
-│   └── seedData.js          # Database seeding
-├── server.js                # Express server
-├── .env                     # Environment variables
-├── package.json             # Backend dependencies
-└── client/
-    ├── src/
-    │   ├── components/
-    │   │   ├── DoctorCard.js
-    │   │   ├── AppointmentForm.js
-    │   │   └── ProtectedRoute.js
-    │   ├── pages/
-    │   │   ├── Home.js
-    │   │   ├── Login.js
-    │   │   ├── Register.js
-    │   │   ├── Dashboard.js
-    │   │   └── Admin.js
-    │   ├── api.js            # API client
-    │   ├── App.js            # Main app
-    │   ├── index.js          # Entry point
-    │   └── index.css         # Global styles
-    ├── public/
-    │   └── index.html
-    ├── package.json          # Frontend dependencies
-    ├── tailwind.config.js    # Tailwind configuration
-    └── postcss.config.js     # PostCSS configuration
-```
+### Real-time updates
 
-## 🔗 API Endpoints
+Each signed-in tab keeps one Server-Sent Events connection to `/api/events`. The server pushes:
 
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-- `GET /api/auth/me` - Get current user (requires auth)
+- `appointment` to the patient, the doctor and admins when a booking is made, moved, confirmed, completed or cancelled
+- `slots` to everyone when a doctor's open times change, so booking forms refresh on their own
+- `directory` when an admin adds, edits or removes a doctor
 
-### Doctors
-- `GET /api/doctors` - Get all doctors (with filters)
-- `GET /api/doctors/:id` - Get single doctor
-- `POST /api/doctors` - Create doctor (auth required)
-- `PUT /api/doctors/:id` - Update doctor (auth required)
-- `DELETE /api/doctors/:id` - Delete doctor (auth required)
+Browsers allow six connections per site over HTTP/1.1, so the client closes its stream whenever a page is hidden. In production, serve the app over HTTP/2 (for example behind nginx or a cloud load balancer) so many open tabs never compete for connections.
 
-### Appointments
-- `GET /api/appointments` - Get user's appointments (auth required)
-- `GET /api/appointments/:id` - Get single appointment (auth required)
-- `POST /api/appointments` - Book appointment (auth required)
-- `PUT /api/appointments/:id` - Update appointment (auth required)
-- `DELETE /api/appointments/:id` - Cancel appointment (auth required)
-
-### Admin
-- `GET /api/admin/stats` - Dashboard statistics (auth required)
-- `GET /api/admin/appointments` - All appointments (auth required)
-- `PUT /api/admin/appointments/:id` - Update appointment status (auth required)
-- `GET /api/admin/doctors` - All doctors (auth required)
-- `GET /api/admin/users` - All users (auth required)
-
-## 🔐 Authentication
-
-The application uses JWT (JSON Web Tokens) for secure authentication:
-1. Users register or login
-2. Server returns a JWT token
-3. Token is stored in localStorage
-4. Token is sent with every API request in Authorization header
-5. Protected routes require valid token
-
-## 🎨 Design Highlights
-
-- **Modern UI**: Built with Tailwind CSS for a professional look
-- **Responsive Design**: Works seamlessly on mobile, tablet, and desktop
-- **Accessibility**: Semantic HTML and proper ARIA labels
-- **Performance**: Optimized images, lazy loading, and efficient state management
-- **User Experience**: Smooth transitions, clear feedback, and intuitive navigation
-
-## 📱 Features in Detail
-
-### Home Page
-- Browse all doctors
-- Filter by specialization
-- Search by name or specialization
-- Quick view of doctor details (experience, fees, phone)
-- One-click booking
-
-### Dashboard
-- View all appointments
-- Book new appointments
-- Cancel appointments
-- Appointment status tracking
-- Quick statistics
-
-### Admin Panel
-- Dashboard with key statistics
-- Manage doctors (CRUD operations)
-- Manage appointments (view and update status)
-- View all users
-- Generate insights
-
-## 🔍 Error Handling
-
-The application includes comprehensive error handling:
-- Input validation on both frontend and backend
-- Proper HTTP status codes
-- User-friendly error messages
-- Logging for debugging
-
-## 🚀 Production Deployment
-
-For production deployment:
-
-1. **Update environment variables**:
-   - Change `JWT_SECRET` to a strong random string
-   - Set `NODE_ENV=production`
-   - Use MongoDB Atlas for database
-
-2. **Build frontend**:
-   ```bash
-   cd client
-   npm run build
-   cd ..
-   ```
-
-3. **Run on production server**:
-   ```bash
-   npm start
-   ```
-
-4. **Use a process manager** (e.g., PM2):
-   ```bash
-   npm install -g pm2
-   pm2 start server.js --name "doctor-app"
-   ```
-
-## 📝 Available Scripts
+## Production
 
 ```bash
-# Backend
-npm start              # Start backend server
-npm run server         # Start with nodemon
-npm run seed           # Seed database with sample data
-npm run dev            # Start both backend and frontend
-
-# Frontend (from client directory)
-npm start              # Start development server
-npm run build          # Build for production
-npm test               # Run tests
+npm run build     # builds client/build
+npm start         # serves the API and the built client from one port
 ```
 
-## 🤝 Contributing
+Set `NODE_ENV=production`, a strong `JWT_SECRET`, and `CLIENT_ORIGIN` if the client is hosted on another domain. Rate-limit counters and live-update connections are kept in memory, which suits a single server process. Running several instances would need a shared store such as Redis for both.
 
-Feel free to fork this project and submit pull requests for any improvements!
+## Troubleshooting
 
-## 📄 License
-
-This project is open source and available under the ISC License.
-
-## 💡 Tips for Customization
-
-1. **Change app name**: Search "MediCare" in all files
-2. **Add more specializations**: Add to seed data
-3. **Customize colors**: Edit `client/tailwind.config.js`
-4. **Add more features**: Follow existing patterns for new routes and components
-
-## 🐛 Troubleshooting
-
-### MongoDB Connection Error
-- Ensure MongoDB is running
-- Check `MONGODB_URI` in .env
-- Verify database name is correct
-
-### Port Already in Use
-- Change `PORT` in .env (default: 5000)
-- For frontend, set `PORT=3001 npm start` in client
-
-### CORS Errors
-- Check that frontend and backend URLs match
-- Verify `proxy` setting in client/package.json
-
-### Token Expired
-- Tokens expire after 7 days (configurable via `JWT_EXPIRE`)
-- Users need to login again to get new token
-
-## 📞 Support
-
-For issues or questions, please create an issue in the repository.
-
----
-
-**Built with ❤️ for modern healthcare appointment management**
+- **The API won't start.** Check that MongoDB is running and that `MONGODB_URI` and `JWT_SECRET` are set in `server/.env`.
+- **Sign-in says "Too many attempts".** The limiter allows 20 attempts per 15 minutes per address. Wait, or restart the API in development.
+- **The status reads "Live updates off".** Your session may have expired. Sign in again.

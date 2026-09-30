@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { RefreshCw, Search, SearchX, ShieldCheck, User, Users } from 'lucide-react';
+import { RefreshCw, Search, SearchX, ShieldCheck, Stethoscope, User, Users } from 'lucide-react';
 import { adminAPI } from '../../api';
 import Alert from '../../components/ui/Alert';
 import Avatar from '../../components/ui/Avatar';
@@ -11,18 +11,24 @@ import { cn } from '../../lib/cn';
 import { formatDate, pluralize } from '../../lib/format';
 import { TABLE, TD, TH, THEAD } from './tableStyles';
 
+const ROLES = {
+  admin: { label: 'Admin', icon: ShieldCheck, className: 'border-sign bg-sign text-ink-inverse' },
+  doctor: { label: 'Doctor', icon: Stethoscope, className: 'border-completed-line bg-completed-soft text-completed-ink' },
+  user: { label: 'Patient', icon: User, className: 'border-line bg-surface-sunken text-ink-soft' },
+};
+
 function RoleBadge({ role }) {
-  const isAdmin = role === 'admin';
-  const Icon = isAdmin ? ShieldCheck : User;
+  const meta = ROLES[role] || ROLES.user;
+  const Icon = meta.icon;
   return (
     <span
       className={cn(
         'inline-flex items-center gap-1.5 rounded-chip border px-2 py-1 text-[13px] font-semibold leading-none',
-        isAdmin ? 'border-sign bg-sign text-ink-inverse' : 'border-line bg-surface-sunken text-ink-soft'
+        meta.className
       )}
     >
       <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-      {isAdmin ? 'Admin' : 'Patient'}
+      {meta.label}
     </span>
   );
 }

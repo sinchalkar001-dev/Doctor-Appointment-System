@@ -4,6 +4,7 @@ import { RefreshCw, Search, SearchX, Stethoscope } from 'lucide-react';
 import { doctorAPI } from '../api';
 import DirectoryBoard from '../components/DirectoryBoard';
 import DoctorCard from '../components/DoctorCard';
+import { useLiveEvent } from '../components/LiveProvider';
 import Alert from '../components/ui/Alert';
 import Button from '../components/ui/Button';
 import EmptyState from '../components/ui/EmptyState';
@@ -29,12 +30,12 @@ const STEPS = [
     text: 'Start from the directory or search by name. Every doctor lists their experience and consultation fee.',
   },
   {
-    title: 'Pick a date and time',
-    text: 'Choose a day from tomorrow onwards and a time between 9 AM and 7 PM that suits you.',
+    title: 'Pick an open time',
+    text: 'Each doctor’s open times are shown live, so you only ever choose a time that is still free.',
   },
   {
     title: 'Get confirmed',
-    text: 'Your request shows as pending until the clinic confirms it. Follow it under My appointments.',
+    text: 'Your doctor confirms the request from their own schedule, and My appointments updates the moment they do.',
   },
 ];
 
@@ -70,8 +71,8 @@ export default function Home({ user }) {
   const [department, setDepartment] = useState('');
   const [sort, setSort] = useState('name');
 
-  const loadDoctors = useCallback(async () => {
-    setLoading(true);
+  const loadDoctors = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     setError('');
     try {
       const response = await doctorAPI.getAll({ limit: 100 });
@@ -89,6 +90,9 @@ export default function Home({ user }) {
   useEffect(() => {
     loadDoctors();
   }, [loadDoctors]);
+
+  // An admin added, edited or removed a doctor: refresh the directory in place.
+  useLiveEvent('directory', () => loadDoctors({ silent: true }));
 
   const departments = useMemo(() => groupDepartments(doctors), [doctors]);
 
@@ -151,7 +155,7 @@ export default function Home({ user }) {
       <Alert
         title="The doctor list didn’t load"
         action={
-          <Button variant="secondary" size="sm" onClick={loadDoctors}>
+          <Button variant="secondary" size="sm" onClick={() => loadDoctors()}>
             <RefreshCw aria-hidden="true" />
             Try again
           </Button>

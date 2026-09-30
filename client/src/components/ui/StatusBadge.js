@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Hourglass, XCircle } from 'lucide-react';
+import { CheckCheck, CheckCircle2, Hourglass, XCircle } from 'lucide-react';
 import { cn } from '../../lib/cn';
 
 export const STATUS_META = {
@@ -15,7 +15,14 @@ export const STATUS_META = {
     icon: CheckCircle2,
     badge: 'border-confirmed-line bg-confirmed-soft text-confirmed-ink',
     fill: 'bg-confirmed',
-    meaning: 'The clinic has approved the time.',
+    meaning: 'The doctor has approved the time.',
+  },
+  completed: {
+    label: 'Completed',
+    icon: CheckCheck,
+    badge: 'border-completed-line bg-completed-soft text-completed-ink',
+    fill: 'bg-completed',
+    meaning: 'The visit took place.',
   },
   cancelled: {
     label: 'Cancelled',

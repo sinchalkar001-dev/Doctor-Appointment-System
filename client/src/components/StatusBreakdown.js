@@ -3,7 +3,7 @@ import { STATUS_META } from './ui/StatusBadge';
 import { cn } from '../lib/cn';
 import { pluralize } from '../lib/format';
 
-const ORDER = ['pending', 'confirmed', 'cancelled'];
+const ORDER = ['pending', 'confirmed', 'completed', 'cancelled'];
 
 /**
  * One stacked bar of appointment statuses. Status colours are reserved for
@@ -74,7 +74,7 @@ export default function StatusBreakdown({ counts }) {
             </div>
           </div>
 
-          <ul className="mt-6 grid gap-3 sm:grid-cols-3 sm:gap-4">
+          <ul className="mt-6 grid gap-3 sm:grid-cols-2 sm:gap-x-6 sm:gap-y-4">
             {ORDER.map((key) => {
               const meta = STATUS_META[key];
               const Icon = meta.icon;

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Check, CheckCircle2, Hourglass, RefreshCw } from 'lucide-react';
 import { adminAPI } from '../../api';
+import { useLiveEvent } from '../../components/LiveProvider';
 import StatusBreakdown from '../../components/StatusBreakdown';
 import Alert from '../../components/ui/Alert';
 import Button from '../../components/ui/Button';
@@ -70,6 +71,10 @@ export default function OverviewTab({ onReviewPending }) {
     load();
   }, [load]);
 
+  useLiveEvent('appointment', () => load({ silent: true }));
+  useLiveEvent('directory', () => load({ silent: true }));
+  useLiveEvent('reconnected', () => load({ silent: true }));
+
   const confirm = async (appointment) => {
     setBusyId(appointment._id);
     try {
@@ -113,7 +118,9 @@ export default function OverviewTab({ onReviewPending }) {
   const total = stats.totalAppointments || 0;
   const pendingCount = stats.pendingAppointments || 0;
   const confirmedCount = stats.confirmedAppointments || 0;
-  const cancelledCount = Math.max(total - pendingCount - confirmedCount, 0);
+  const completedCount = stats.completedAppointments || 0;
+  const cancelledCount =
+    stats.cancelledAppointments ?? Math.max(total - pendingCount - confirmedCount - completedCount, 0);
 
   return (
     <div className="space-y-8">
@@ -122,9 +129,17 @@ export default function OverviewTab({ onReviewPending }) {
           Key numbers
         </h2>
         <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-plate border border-line bg-line lg:grid-cols-4">
-          <StatTile label="Doctors" value={stats.totalDoctors} />
+          <StatTile
+            label="Doctors"
+            value={stats.totalDoctors}
+            note={typeof stats.doctorsWithPortal === 'number' ? `${stats.doctorsWithPortal} can sign in` : null}
+          />
           <StatTile label="Registered users" value={stats.totalUsers} />
-          <StatTile label="Appointments" value={total} />
+          <StatTile
+            label="Appointments"
+            value={total}
+            note={typeof stats.todayAppointments === 'number' ? `${stats.todayAppointments} scheduled today` : null}
+          />
           <StatTile
             label="Awaiting confirmation"
             value={pendingCount}
@@ -143,7 +158,9 @@ export default function OverviewTab({ onReviewPending }) {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-        <StatusBreakdown counts={{ pending: pendingCount, confirmed: confirmedCount, cancelled: cancelledCount }} />
+        <StatusBreakdown
+          counts={{ pending: pendingCount, confirmed: confirmedCount, completed: completedCount, cancelled: cancelledCount }}
+        />
 
         <section aria-labelledby="queue-title" className="plate">
           <div className="flex items-center justify-between gap-4 border-b border-line px-5 py-4 sm:px-6">

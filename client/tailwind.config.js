@@ -60,6 +60,7 @@ module.exports = {
         },
         pending: tonal('pending'),
         confirmed: tonal('confirmed'),
+        completed: tonal('completed'),
         cancelled: tonal('cancelled'),
         danger: {
           ...tonal('danger'),

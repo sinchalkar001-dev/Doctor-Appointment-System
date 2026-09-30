@@ -8,14 +8,16 @@ import { Field, Input, PasswordInput } from '../components/ui/Field';
 import { useToast } from '../components/ui/Toast';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 import { firstName } from '../lib/format';
+import { homeFor } from '../lib/session';
 
 const DEMO_PASSWORD = 'password123';
 const DEMO_ACCOUNTS = [
   { label: 'Patient', email: 'john@example.com' },
+  { label: 'Doctor', email: 'sarah.johnson@example.com' },
   { label: 'Admin', email: 'admin@example.com' },
 ];
 
-export default function Login({ setUser }) {
+export default function Login({ onSession }) {
   useDocumentTitle('Sign in');
   const location = useLocation();
   const navigate = useNavigate();
@@ -38,11 +40,9 @@ export default function Login({ setUser }) {
       const response = await authAPI.login({ email: email.trim(), password });
       if (response.data.success) {
         const { token, user } = response.data;
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
-        setUser(user);
+        onSession({ token, user });
         notify({ title: `Welcome back, ${firstName(user.name) || 'there'}` });
-        const destination = from?.pathname ? `${from.pathname}${from.search || ''}` : '/';
+        const destination = from?.pathname ? `${from.pathname}${from.search || ''}` : homeFor(user);
         navigate(destination, { replace: true, state: from?.state });
       } else {
         setError(response.data.message || 'Sign in failed. Check your email and password.');
@@ -111,7 +111,8 @@ export default function Login({ setUser }) {
             Demo accounts
           </h2>
           <p className="mt-1 text-sm text-ink-muted">
-            Both use the password <span className="font-semibold text-ink-soft">{DEMO_PASSWORD}</span>.
+            They all use the password <span className="font-semibold text-ink-soft">{DEMO_PASSWORD}</span>. Run{' '}
+            <span className="font-semibold text-ink-soft">npm run seed</span> first to create them.
           </p>
           <ul className="mt-4 space-y-2">
             {DEMO_ACCOUNTS.map((account) => (

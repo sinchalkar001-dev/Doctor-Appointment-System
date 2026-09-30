@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { CalendarDays, CalendarPlus, ChevronDown, LayoutDashboard, LogOut, Menu, X } from 'lucide-react';
+import { CalendarDays, CalendarPlus, ChevronDown, LayoutDashboard, LogOut, Menu, UserCog, X } from 'lucide-react';
 import Logo from './Logo';
 import Avatar from './ui/Avatar';
 import Button, { buttonClasses } from './ui/Button';
@@ -9,7 +9,8 @@ import { firstName } from '../lib/format';
 
 function navItems(user) {
   const items = [{ to: '/', label: 'Find a doctor', end: true }];
-  if (user) items.push({ to: '/dashboard', label: 'My appointments' });
+  if (user?.role === 'doctor') items.push({ to: '/doctor', label: 'Schedule' });
+  else if (user) items.push({ to: '/dashboard', label: 'My appointments' });
   if (user?.role === 'admin') items.push({ to: '/admin', label: 'Admin' });
   return items;
 }
@@ -75,9 +76,9 @@ function UserMenu({ user, onSignOut }) {
           </div>
           <ul className="p-1.5">
             <li>
-              <Link to="/dashboard" className={menuItemClass}>
+              <Link to={user.role === 'doctor' ? '/doctor' : '/dashboard'} className={menuItemClass}>
                 <CalendarDays aria-hidden="true" />
-                My appointments
+                {user.role === 'doctor' ? 'Schedule' : 'My appointments'}
               </Link>
             </li>
             {isAdmin ? (
@@ -88,6 +89,12 @@ function UserMenu({ user, onSignOut }) {
                 </Link>
               </li>
             ) : null}
+            <li>
+              <Link to="/account" className={menuItemClass}>
+                <UserCog aria-hidden="true" />
+                Account settings
+              </Link>
+            </li>
             <li>
               <button type="button" onClick={onSignOut} className={menuItemClass}>
                 <LogOut aria-hidden="true" />
@@ -105,8 +112,9 @@ export default function SiteHeader({ user, onSignOut }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const items = navItems(user);
-  // The dashboard has its own booking button, so the header one would repeat it.
-  const showBookButton = location.pathname !== '/dashboard';
+  // The dashboard has its own booking button, and doctors don't book from the header.
+  const showBookButton = location.pathname !== '/dashboard' && user?.role !== 'doctor';
+  const mobileItems = user ? [...items, { to: '/account', label: 'Account settings' }] : items;
 
   useEffect(() => {
     setMenuOpen(false);
@@ -190,7 +198,7 @@ export default function SiteHeader({ user, onSignOut }) {
         <div id="mobile-menu" className="animate-menu-in border-t border-line bg-surface md:hidden">
           <nav aria-label="Main" className="container-page py-3">
             <ul className="space-y-1">
-              {items.map((item) => (
+              {mobileItems.map((item) => (
                 <li key={item.to}>
                   <NavLink
                     to={item.to}
@@ -219,10 +227,12 @@ export default function SiteHeader({ user, onSignOut }) {
                   </div>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <Link to="/dashboard" state={{ openBooking: true }} className={buttonClasses({ block: true })}>
-                    <CalendarPlus aria-hidden="true" />
-                    Book appointment
-                  </Link>
+                  {user.role !== 'doctor' ? (
+                    <Link to="/dashboard" state={{ openBooking: true }} className={buttonClasses({ block: true })}>
+                      <CalendarPlus aria-hidden="true" />
+                      Book appointment
+                    </Link>
+                  ) : null}
                   <Button variant="secondary" block onClick={onSignOut}>
                     <LogOut aria-hidden="true" />
                     Sign out
