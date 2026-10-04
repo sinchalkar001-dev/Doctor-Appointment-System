@@ -1,3 +1,4 @@
+const { Types } = require('mongoose');
 const Appointment = require('../models/Appointment');
 const HttpError = require('../utils/httpError');
 const realtime = require('./realtime');
@@ -78,10 +79,15 @@ function populateParties(appointment) {
   ]);
 }
 
+/** True for a populated document, false for a bare id (which is also an object) or null. */
+function isPopulated(value) {
+  return Boolean(value) && typeof value === 'object' && !(value instanceof Types.ObjectId);
+}
+
 /** Plain object for API responses: internal flags and the doctor's account id stay on the server. */
 function toClient(appointment) {
   const plain = typeof appointment.toObject === 'function' ? appointment.toObject() : { ...appointment };
-  if (plain.doctor && typeof plain.doctor === 'object') {
+  if (isPopulated(plain.doctor)) {
     const doctor = { ...plain.doctor };
     delete doctor.user;
     plain.doctor = doctor;

@@ -33,7 +33,8 @@ function rateLimit({ windowMs = 15 * 60 * 1000, max = 20, keyFor = (req) => req.
     if (entry.count > max) {
       res.set('Retry-After', String(secondsLeft));
       const minutes = Math.max(1, Math.ceil(secondsLeft / 60));
-      return next(new HttpError(429, message || `Too many attempts. Wait ${minutes} minutes and try again.`));
+      const wait = `${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
+      return next(new HttpError(429, message || `Too many attempts. Wait ${wait} and try again.`));
     }
     return next();
   };
